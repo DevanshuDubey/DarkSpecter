@@ -3,6 +3,5 @@
 <details>
 <summary><strong>The Last Transmission</strong></summary>
 
-# The Last Transmission
+[The_Last_Transmission/Readme.md](The_Last_Transmission/Readme.md)
 
-</details>
