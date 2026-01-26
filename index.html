@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DarkSpecter | Mr. Robot vs Dark Army CTF</title>
+    <meta name="description" content="DarkSpecter CTF - Join the resistance. Decode the fragments. Uncover the truth.">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #0d0d14;
+            --bg-card: rgba(18, 18, 26, 0.95);
+            --neon-green: #00ff41;
+            --neon-red: #ff0040;
+            --neon-blue: #00d4ff;
+            --neon-purple: #b400ff;
+            --text-primary: #e0e0e0;
+            --text-muted: #6a6a7a;
+            --border-color: #1a1a2e;
+            --modal-bg: rgba(10, 10, 15, 0.98);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Share Tech Mono', monospace;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Scanline Effect */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(0deg,
+                    rgba(0, 0, 0, 0.1) 0px,
+                    rgba(0, 0, 0, 0.1) 1px,
+                    transparent 1px,
+                    transparent 2px);
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        /* Matrix Rain Background */
+        #matrix-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.05;
+        }
+
+        @keyframes flicker {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.8;
+            }
+
+            75% {
+                opacity: 0.9;
+            }
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: linear-gradient(180deg, rgba(0, 255, 65, 0.03) 0%, transparent 100%);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(2rem, 8vw, 4rem);
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--neon-green) 0%, var(--neon-blue) 50%, var(--neon-purple) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(0, 255, 65, 0.5);
+            animation: flicker 3s infinite;
+            letter-spacing: 0.15em;
+        }
+
+        .tagline {
+            color: var(--neon-red);
+            font-size: 0.9rem;
+            letter-spacing: 0.4em;
+            text-transform: uppercase;
+            margin-top: 1rem;
+            opacity: 0.8;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-top: 1.5rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.6;
+        }
+
+        /* Status Bar */
+        .status-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        .terminal-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--neon-green);
+            font-size: 0.85rem;
+            padding: 0.6rem 1.2rem;
+            background: rgba(0, 255, 65, 0.05);
+            border: 1px solid rgba(0, 255, 65, 0.2);
+            border-radius: 4px;
+        }
+
+        .terminal-status::before {
+            content: '>';
+            color: var(--neon-red);
+            font-weight: bold;
+        }
+
+        /* Main Content */
+        main {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 3rem 1.5rem;
+            position: relative;
+        }
+
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            color: var(--neon-green);
+            margin-bottom: 3rem;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            justify-content: center;
+        }
+
+        .section-title::before,
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--neon-green));
+        }
+
+        .section-title::after {
+            background: linear-gradient(-90deg, transparent, var(--neon-green));
+        }
+
+        /* Timeline Layout */
+        .timeline {
+            position: relative;
+            padding: 2rem 0;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(180deg, transparent, var(--border-color) 10%, var(--border-color) 90%, transparent);
+            transform: translateX(-50%);
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 4rem;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .timeline-dot {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 12px;
+            height: 12px;
+            background: var(--bg-primary);
+            border: 2px solid var(--neon-green);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+            box-shadow: 0 0 10px var(--neon-green);
+        }
+
+        .challenge-card {
+            width: 80%;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem 2rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .challenge-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            width: 4px;
+            height: 40%;
+            background: var(--neon-green);
+            transform: translateY(-50%);
+            border-radius: 0 4px 4px 0;
+            transition: height 0.3s ease;
+        }
+
+        .challenge-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            border-color: var(--neon-green);
+            box-shadow: 0 0 40px rgba(0, 255, 65, 0.15);
+        }
+
+        .challenge-card:hover::before {
+            height: 70%;
+        }
+
+        .challenge-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .challenge-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.25rem;
+            color: var(--neon-green);
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .challenge-path {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            opacity: 0.7;
+        }
+
+        .card-icon {
+            color: var(--neon-green);
+            font-size: 1.2rem;
+            opacity: 0.5;
+            transition: transform 0.3s ease;
+        }
+
+        .challenge-card:hover .card-icon {
+            transform: translateX(5px);
+            opacity: 1;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(15px);
+            z-index: 2000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal-container {
+            width: 90%;
+            max-width: 700px;
+            max-height: 85vh;
+            background: var(--modal-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 1);
+            transform: translateY(20px);
+            transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+        }
+
+        .modal-overlay.active .modal-container {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .modal-title-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .modal-category {
+            font-size: 0.65rem;
+            color: var(--neon-purple);
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+        }
+
+        .modal-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8rem;
+            color: var(--neon-green);
+            line-height: 1.2;
+        }
+
+        .close-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.3s ease;
+            padding: 0.5rem;
+            line-height: 1;
+        }
+
+        .close-btn:hover {
+            color: var(--neon-red);
+        }
+
+        .modal-body {
+            padding: 2rem;
+            overflow-y: auto;
+            flex: 1;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-color) transparent;
+        }
+
+        .modal-body::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .modal-body::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 10px;
+        }
+
+        .challenge-description {
+            color: var(--text-primary);
+            line-height: 1.8;
+            font-size: 1rem;
+            white-space: pre-wrap;
+        }
+
+        .challenge-description a {
+            color: var(--neon-blue);
+            text-decoration: none;
+            border-bottom: 1px dashed var(--neon-blue);
+            transition: all 0.2s ease;
+        }
+
+        .challenge-description a:hover {
+            color: var(--neon-green);
+            border-color: var(--neon-green);
+        }
+
+        .modal-footer {
+            padding: 1.5rem 2rem;
+            border-top: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 0 0 12px 12px;
+        }
+
+        .files-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .file-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 0.8rem 1.2rem;
+            background: rgba(0, 212, 255, 0.05);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 6px;
+            color: var(--neon-blue);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .file-link:hover {
+            background: rgba(0, 212, 255, 0.15);
+            border-color: var(--neon-blue);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 20px rgba(0, 212, 255, 0.15);
+        }
+
+        .file-icon {
+            font-size: 1.2rem;
+        }
+
+        /* Error/Loading States */
+        .loading {
+            text-align: center;
+            padding: 4rem;
+            color: var(--neon-green);
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(0, 255, 65, 0.2);
+            border-top-color: var(--neon-green);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .error-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--neon-red);
+            background: rgba(255, 0, 64, 0.05);
+            border: 1px dashed var(--neon-red);
+            border-radius: 8px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 4rem 2rem;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        footer a {
+            color: var(--neon-green);
+            text-decoration: none;
+        }
+
+        @media (max-width: 768px) {
+            .timeline::before {
+                left: 20px;
+            }
+
+            .timeline-dot {
+                left: 20px;
+            }
+
+            .challenge-card {
+                width: calc(100% - 60px);
+                margin-left: 60px;
+            }
+
+            .modal-title {
+                font-size: 1.4rem;
+            }
+
+            .modal-body {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="matrix-bg"></canvas>
+
+    <header>
+        <h1 class="logo">DARKSPECTER</h1>
+        <p class="tagline">Mr. Robot vs Dark Army</p>
+        <p class="subtitle">The session is active. Fragments recovered from the transmission buffer. Decode them to
+            uncover the archive.</p>
+        <div class="status-container">
+            <div class="terminal-status">
+                <span>INITIALIZING SEQUENCES...</span>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="section-title">MISSION BRIEFINGS</div>
+        <div id="timeline" class="timeline">
+            <div class="loading">
+                <div class="loading-spinner"></div>
+                <p style="margin-top: 1rem;">Intercepting transmissions...</p>
+            </div>
+        </div>
+    </main>
+
+    <div id="challenge-modal" class="modal-overlay">
+        <div class="modal-container">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <span id="modal-category" class="modal-category">TRANSMISSION</span>
+                    <h2 id="modal-challenge-title" class="modal-title">Challenge Title</h2>
+                </div>
+                <button class="close-btn" onclick="closeModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div id="modal-description" class="challenge-description"></div>
+            </div>
+            <div id="modal-footer" class="modal-footer">
+                <div id="modal-files" class="files-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>🕶️ DarkSpecter CTF Portal | <a href="https://github.com/DevanshuDubey/DarkSpecter"
+                target="_blank">Repository</a></p>
+        <p style="margin-top: 0.8rem; opacity: 0.5;">Wait... is someone watching?</p>
+    </footer>
+
+    <script>
+        const CONFIG = {
+            owner: 'DevanshuDubey',
+            repo: 'DarkSpecter',
+            branch: 'main'
+        };
+
+        const CHALLENGES_CACHE = new Map();
+
+        function getFileIcon(filename) {
+            const ext = filename.split('.').pop().toLowerCase();
+            const icons = {
+                'jpg': '🖼️', 'jpeg': '🖼️', 'png': '🖼️', 'gif': '🖼️', 'webp': '🖼️',
+                'txt': '📄', 'md': '📝', 'zip': '📦', 'tar': '📦', 'py': '🐍', 'js': '📜'
+            };
+            return icons[ext] || '📁';
+        }
+
+        function formatName(name) {
+            return name.replace(/_/g, ' ').replace(/-/g, ' ');
+        }
+
+        function resolvePath(basePath, relativePath) {
+            if (relativePath.startsWith('http')) return relativePath;
+            const parts = basePath.split('/').filter(p => p);
+            const relParts = relativePath.split('/');
+            for (const part of relParts) {
+                if (part === '..') parts.pop();
+                else if (part !== '.') parts.push(part);
+            }
+            return parts.join('/');
+        }
+
+        function parseMarkdownLinks(text, basePath) {
+            text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, label, url) => {
+                const isInternal = !url.startsWith('http');
+                if (isInternal) {
+                    const resolved = resolvePath(basePath, url);
+                    const githubUrl = `https://github.com/${CONFIG.owner}/${CONFIG.repo}/tree/${CONFIG.branch}/${resolved}`;
+                    return `<a href="${githubUrl}" target="_blank">${label}</a>`;
+                }
+                return `<a href="${url}" target="_blank">${label}</a>`;
+            });
+            // Bare URLs
+            text = text.replace(/(^|[^"'])(https?:\/\/[^\s<]+)/g, '$1<a href="$2" target="_blank">$2</a>');
+            return text;
+        }
+
+        async function fetchContents(path = '') {
+            const response = await fetch(`https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents/${path}`);
+            if (!response.ok) throw new Error('API request failed');
+            return response.json();
+        }
+
+        async function fetchFileContent(path) {
+            const response = await fetch(`https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents/${path}`);
+            if (!response.ok) return null;
+            const data = await response.json();
+            try {
+                return decodeURIComponent(atob(data.content).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+            } catch (e) { return atob(data.content); }
+        }
+
+        async function buildChallengeTree(path = '') {
+            const contents = await fetchContents(path);
+            const challenges = [];
+            contents.sort((a, b) => (a.type === 'dir' ? -1 : 1));
+
+            for (const item of contents) {
+                if (item.name.startsWith('.') || item.name === 'index.html' || (path === '' && item.name === 'Readme.md')) continue;
+
+                if (item.type === 'dir') {
+                    const challenge = {
+                        name: item.name,
+                        path: item.path,
+                        files: [],
+                        description: ''
+                    };
+
+                    const folderContents = await fetchContents(item.path);
+                    for (const file of folderContents) {
+                        if (file.name.toLowerCase() === 'readme.md') {
+                            const content = await fetchFileContent(file.path);
+                            challenge.description = content ? content.replace(/^#[^\n]*\n*/, '').trim() : '';
+                        } else if (file.type === 'file' && !file.name.startsWith('.')) {
+                            const fileUrl = `https://github.com/${CONFIG.owner}/${CONFIG.repo}/blob/${CONFIG.branch}/${file.path}`;
+                            challenge.files.push({ name: file.name, url: fileUrl });
+                        } else if (file.type === 'dir') {
+                            const subs = await buildChallengeTree(file.path);
+                            challenges.push(...subs);
+                        }
+                    }
+                    if (challenge.description || challenge.files.length > 0) {
+                        challenges.push(challenge);
+                        CHALLENGES_CACHE.set(challenge.path, challenge);
+                    }
+                }
+            }
+            return challenges;
+        }
+
+        const modal = document.getElementById('challenge-modal');
+
+        function openModal(challenge) {
+            document.getElementById('modal-challenge-title').textContent = formatName(challenge.name);
+            document.getElementById('modal-category').textContent = challenge.path.includes('/') ? challenge.path.split('/')[0].toUpperCase() : 'TRANSMISSION';
+            document.getElementById('modal-description').innerHTML = parseMarkdownLinks(challenge.description, challenge.path);
+
+            const fileGrid = document.getElementById('modal-files');
+            const footer = document.getElementById('modal-footer');
+            fileGrid.innerHTML = '';
+
+            if (challenge.files.length > 0) {
+                footer.style.display = 'block';
+                challenge.files.forEach(file => {
+                    const link = document.createElement('a');
+                    link.href = file.url;
+                    link.className = 'file-link';
+                    link.onclick = function (e) {
+                        e.preventDefault();
+                        window.open(file.url, '_blank');
+                    };
+                    link.innerHTML = `<span class="file-icon">${getFileIcon(file.name)}</span> ${file.name}`;
+                    fileGrid.appendChild(link);
+                });
+            } else {
+                footer.style.display = 'none';
+            }
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            modal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        window.onclick = (e) => { if (e.target === modal) closeModal(); };
+        window.onkeydown = (e) => { if (e.key === 'Escape') closeModal(); };
+
+        function openChallengeByPath(path) {
+            const challenge = CHALLENGES_CACHE.get(path);
+            if (challenge) openModal(challenge);
+        }
+
+        function renderTimeline(challenges) {
+            const container = document.getElementById('timeline');
+            container.innerHTML = '';
+
+            challenges.forEach((c, idx) => {
+                const item = document.createElement('div');
+                item.className = 'timeline-item';
+                item.innerHTML = `
+                    <div class="timeline-dot"></div>
+                    <div class="challenge-card" onclick="openChallengeByPath('${c.path}')">
+                        <div class="challenge-info">
+                            <h3 class="challenge-title">${formatName(c.name)}</h3>
+                            <span class="challenge-path">/${c.path}</span>
+                        </div>
+                        <span class="card-icon">➜</span>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function initMatrix() {
+            const canvas = document.getElementById('matrix-bg');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            const chars = '01ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜｦﾝ';
+            const fontSize = 14;
+            const col = Math.floor(canvas.width / fontSize);
+            const drops = Array(col).fill(1);
+            setInterval(() => {
+                ctx.fillStyle = 'rgba(10, 10, 15, 0.05)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#00ff41';
+                ctx.font = fontSize + 'px monospace';
+                drops.forEach((y, i) => {
+                    ctx.fillText(chars[Math.floor(Math.random() * chars.length)], i * fontSize, y * fontSize);
+                    if (y * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                    drops[i]++;
+                });
+            }, 50);
+        }
+
+        async function init() {
+            try {
+                initMatrix();
+                const challenges = await buildChallengeTree();
+                renderTimeline(challenges);
+                document.querySelector('.terminal-status span').textContent = `${challenges.length} FRAGMENT(S) RECOVERED // SEQUENCED`;
+            } catch (e) {
+                document.getElementById('timeline').innerHTML = `<div class="error-state">TRANSMISSION FAILED: ${e.message}</div>`;
+            }
+        }
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+
+</html>
