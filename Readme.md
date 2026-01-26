@@ -1,4 +1,9 @@
-# Mr. Robot vs Dark Army
-
 ## Day 0
-[The_Last_Transmission/Readme.md](The_Last_Transmission/Readme.md)
+
+<details>
+<summary><strong>Day 0: The Last Transmission</strong></summary>
+
+# The Last Transmission
+(content here)
+
+</details>
