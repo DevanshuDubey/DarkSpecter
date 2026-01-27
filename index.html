@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=1280">
     <title>DarkSpecter | Mr. Robot vs Dark Army CTF</title>
     <meta name="description" content="DarkSpecter CTF - Join the resistance. Decode the fragments. Uncover the truth.">
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap"
@@ -204,50 +204,54 @@
             align-items: center;
         }
 
-        .timeline-dot {
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            width: 12px;
-            height: 12px;
-            background: var(--bg-primary);
-            border: 2px solid var(--neon-green);
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 2;
-            box-shadow: 0 0 10px var(--neon-green);
-        }
+
 
         .challenge-card {
             width: 80%;
             background: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 12px;
-            padding: 1.5rem 2rem;
-            cursor: pointer;
+            padding: 0;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
-            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            will-change: transform;
+        }
+
+        .card-header {
+            width: 100%;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            padding: 1.5rem 2rem;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            position: relative;
         }
 
-        .challenge-card::before {
+        .card-header::before {
             content: '';
             position: absolute;
             left: 0;
             top: 50%;
             width: 4px;
-            height: 40%;
+            height: 0;
             background: var(--neon-green);
             transform: translateY(-50%);
             border-radius: 0 4px 4px 0;
             transition: height 0.3s ease;
         }
 
+        .challenge-card.expanded .card-header::before {
+            height: 40%;
+        }
 
+        .card-header:hover {
+            background: rgba(0, 255, 65, 0.02);
+        }
 
         .challenge-info {
             display: flex;
@@ -289,8 +293,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(15px);
+            background: rgba(0, 0, 0, 0.9);
             z-index: 2000;
             display: none;
             justify-content: center;
@@ -476,10 +479,7 @@
 
         /* Hierarchical Styles - Expansion */
         .challenge-card {
-            flex-direction: column;
-            align-items: flex-start;
-            overflow: hidden;
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .card-header {
@@ -490,11 +490,16 @@
         }
 
         .expanded-content {
-            max-height: 0;
+            display: grid;
+            grid-template-rows: 0fr;
             opacity: 0;
             width: 100%;
-            transition: all 0.5s ease;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
             overflow: hidden;
+        }
+
+        .expanded-inner {
+            min-height: 0;
         }
 
         .challenge-card.expanded {
@@ -505,11 +510,9 @@
         }
 
         .challenge-card.expanded .expanded-content {
-            max-height: 2000px;
-            /* Large enough for content */
+            grid-template-rows: 1fr;
             opacity: 1;
-            margin-top: 1.5rem;
-            padding-top: 1.5rem;
+            padding: 0 2rem 2rem 2rem;
             border-top: 1px dashed var(--border-color);
         }
 
@@ -518,6 +521,7 @@
             font-size: 0.95rem;
             line-height: 1.6;
             margin-bottom: 2rem;
+            white-space: pre-wrap;
         }
 
         .sub-fragments-title {
@@ -559,19 +563,13 @@
             justify-content: flex-start;
         }
 
-        .sub-challenges-list .timeline-dot {
-            left: -2rem;
-            width: 8px;
-            height: 8px;
-            box-shadow: 0 0 5px var(--neon-green);
-            top: 2rem;
-        }
+
 
         .sub-challenges-list .challenge-card {
             width: 100% !important;
             max-width: none !important;
             background: rgba(255, 255, 255, 0.02);
-            padding: 1rem 1.25rem !important;
+            padding: 0 !important;
             box-shadow: none;
         }
 
@@ -599,29 +597,6 @@
         footer a {
             color: var(--neon-green);
             text-decoration: none;
-        }
-
-        @media (max-width: 768px) {
-            .timeline::before {
-                left: 20px;
-            }
-
-            .timeline-dot {
-                left: 20px;
-            }
-
-            .challenge-card {
-                width: calc(100% - 60px);
-                margin-left: 60px;
-            }
-
-            .modal-title {
-                font-size: 1.4rem;
-            }
-
-            .modal-body {
-                padding: 1.5rem;
-            }
         }
     </style>
 </head>
@@ -871,7 +846,8 @@
 
         async function toggleChallenge(e, path) {
             e.stopPropagation();
-            const card = e.currentTarget;
+            const header = e.currentTarget;
+            const card = header.closest('.challenge-card');
 
             // Allow clicks on file links to pass through
             if (e.target.closest('.file-link')) return;
@@ -914,8 +890,8 @@
 
                 item.innerHTML = `
                     <div class="timeline-dot"></div>
-                    <div class="challenge-card" onclick="toggleChallenge(event, '${c.path}')">
-                        <div class="card-header">
+                    <div class="challenge-card">
+                        <div class="card-header" onclick="toggleChallenge(event, '${c.path}')">
                             <div class="challenge-info">
                                 <h3 class="challenge-title">${formatName(c.name)}</h3>
                                 <span class="challenge-path">/${c.path}</span>
@@ -923,9 +899,11 @@
                             <span class="card-icon">➜</span>
                         </div>
                         <div class="expanded-content">
-                            <div class="card-readme"></div>
-                            <div class="files-grid" style="margin-bottom: 2rem;"></div>
-                            ${subFragmentsHtml}
+                            <div class="expanded-inner">
+                                <div class="card-readme"></div>
+                                <div class="files-grid" style="margin-bottom: 2rem;"></div>
+                                ${subFragmentsHtml}
+                            </div>
                         </div>
                     </div>
                 `;
@@ -968,17 +946,26 @@
             const fontSize = 14;
             const col = Math.floor(canvas.width / fontSize);
             const drops = Array(col).fill(1);
-            setInterval(() => {
-                ctx.fillStyle = 'rgba(10, 10, 15, 0.05)';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = '#00ff41';
-                ctx.font = fontSize + 'px monospace';
-                drops.forEach((y, i) => {
-                    ctx.fillText(chars[Math.floor(Math.random() * chars.length)], i * fontSize, y * fontSize);
-                    if (y * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
-                    drops[i]++;
-                });
-            }, 50);
+            let lastTime = 0;
+            const fps = 20;
+            const interval = 1000 / fps;
+
+            function animate(time) {
+                if (time - lastTime >= interval) {
+                    ctx.fillStyle = 'rgba(10, 10, 15, 0.1)';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.fillStyle = '#00ff41';
+                    ctx.font = fontSize + 'px monospace';
+                    drops.forEach((y, i) => {
+                        ctx.fillText(chars[Math.floor(Math.random() * chars.length)], i * fontSize, y * fontSize);
+                        if (y * fontSize > canvas.height && Math.random() > 0.985) drops[i] = 0;
+                        drops[i]++;
+                    });
+                    lastTime = time;
+                }
+                requestAnimationFrame(animate);
+            }
+            requestAnimationFrame(animate);
         }
 
         async function init() {
