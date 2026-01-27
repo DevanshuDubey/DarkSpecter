@@ -247,15 +247,7 @@
             transition: height 0.3s ease;
         }
 
-        .challenge-card:hover {
-            transform: translateY(-5px) scale(1.02);
-            border-color: var(--neon-green);
-            box-shadow: 0 0 40px rgba(0, 255, 65, 0.15);
-        }
 
-        .challenge-card:hover::before {
-            height: 70%;
-        }
 
         .challenge-info {
             display: flex;
@@ -482,6 +474,120 @@
             border-radius: 8px;
         }
 
+        /* Hierarchical Styles - Expansion */
+        .challenge-card {
+            flex-direction: column;
+            align-items: flex-start;
+            overflow: hidden;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .expanded-content {
+            max-height: 0;
+            opacity: 0;
+            width: 100%;
+            transition: all 0.5s ease;
+            overflow: hidden;
+        }
+
+        .challenge-card.expanded {
+            max-width: 900px;
+            width: 90%;
+            border-color: var(--neon-green);
+            box-shadow: 0 0 50px rgba(0, 255, 65, 0.1);
+        }
+
+        .challenge-card.expanded .expanded-content {
+            max-height: 2000px;
+            /* Large enough for content */
+            opacity: 1;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px dashed var(--border-color);
+        }
+
+        .card-readme {
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+
+        .sub-fragments-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            color: var(--neon-purple);
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sub-fragments-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(180, 0, 255, 0.2);
+        }
+
+        .sub-challenges-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            padding: 1.5rem 0 1.5rem 2rem;
+            border-left: 1px solid var(--border-color);
+            margin-top: 1rem;
+            width: 100%;
+        }
+
+        .sub-challenges-list .timeline-item {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            margin-bottom: 0;
+            padding: 0;
+            width: 100%;
+            justify-content: flex-start;
+        }
+
+        .sub-challenges-list .timeline-dot {
+            left: -2rem;
+            width: 8px;
+            height: 8px;
+            box-shadow: 0 0 5px var(--neon-green);
+            top: 2rem;
+        }
+
+        .sub-challenges-list .challenge-card {
+            width: 100% !important;
+            max-width: none !important;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 1rem 1.25rem !important;
+            box-shadow: none;
+        }
+
+        .sub-challenges-list .challenge-title {
+            font-size: 1rem;
+        }
+
+        /* Adjusting the card icon for rotation */
+        .card-icon {
+            transition: transform 0.3s ease;
+        }
+
+        .challenge-card.expanded .card-icon {
+            transform: rotate(90deg);
+        }
+
         footer {
             text-align: center;
             padding: 4rem 2rem;
@@ -633,49 +739,102 @@
         }
 
         async function buildChallengeTree(path = '') {
-            const contents = await fetchContents(path);
-            const challenges = [];
-            contents.sort((a, b) => (a.type === 'dir' ? -1 : 1));
+            const url = `https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/git/trees/${CONFIG.branch}?recursive=1`;
+            const response = await fetch(url);
+            if (!response.ok) {
+                if (response.status === 403) throw new Error('API rate limit exceeded. Please try again later.');
+                throw new Error('API request failed');
+            }
+            const data = await response.json();
+            const tree = data.tree;
+            const allChallenges = new Map();
+            const folders = tree.filter(item => item.type === 'tree' && !item.path.startsWith('.'));
 
-            for (const item of contents) {
-                if (item.name.startsWith('.') || item.name === 'index.html' || (path === '' && item.name === 'Readme.md')) continue;
+            // Pass 1: Create all challenge objects
+            for (const folder of folders) {
+                const folderPrefix = folder.path + '/';
+                const readmeItem = tree.find(item =>
+                    item.path.startsWith(folderPrefix) &&
+                    item.path.split('/').pop().toLowerCase() === 'readme.md'
+                );
 
-                if (item.type === 'dir') {
+                if (readmeItem) {
                     const challenge = {
-                        name: item.name,
-                        path: item.path,
+                        name: folder.path.split('/').pop(),
+                        path: folder.path,
+                        readmePath: readmeItem.path,
                         files: [],
-                        description: ''
+                        subChallenges: [],
+                        loaded: false
                     };
 
-                    const folderContents = await fetchContents(item.path);
-                    for (const file of folderContents) {
-                        if (file.name.toLowerCase() === 'readme.md') {
-                            const content = await fetchFileContent(file.path);
-                            challenge.description = content ? content.replace(/^#[^\n]*\n*/, '').trim() : '';
-                        } else if (file.type === 'file' && !file.name.startsWith('.')) {
-                            const fileUrl = `https://github.com/${CONFIG.owner}/${CONFIG.repo}/blob/${CONFIG.branch}/${file.path}`;
-                            challenge.files.push({ name: file.name, url: fileUrl });
-                        } else if (file.type === 'dir') {
-                            const subs = await buildChallengeTree(file.path);
-                            challenges.push(...subs);
-                        }
-                    }
-                    if (challenge.description || challenge.files.length > 0) {
-                        challenges.push(challenge);
-                        CHALLENGES_CACHE.set(challenge.path, challenge);
-                    }
+                    // Populate files (direct children only)
+                    tree.filter(item =>
+                        item.path.startsWith(folderPrefix) &&
+                        item.type === 'blob' &&
+                        !item.path.split('/').pop().toLowerCase().startsWith('readme.md') &&
+                        !item.path.split('/').pop().startsWith('.') &&
+                        item.path.substring(folderPrefix.length).indexOf('/') === -1
+                    ).forEach(file => {
+                        challenge.files.push({
+                            name: file.path.split('/').pop(),
+                            url: `https://github.com/${CONFIG.owner}/${CONFIG.repo}/blob/${CONFIG.branch}/${file.path}`
+                        });
+                    });
+
+                    allChallenges.set(folder.path, challenge);
+                    CHALLENGES_CACHE.set(challenge.path, challenge);
                 }
             }
-            return challenges;
+
+            // Pass 2: Establish Hierarchy
+            const roots = [];
+            const sortedPaths = Array.from(allChallenges.keys()).sort((a, b) => a.length - b.length);
+
+            for (const path of sortedPaths) {
+                const challenge = allChallenges.get(path);
+                const pathParts = path.split('/');
+                let parent = null;
+
+                // Find nearest parent that exists in our challenge map
+                for (let i = pathParts.length - 1; i > 0; i--) {
+                    const parentPath = pathParts.slice(0, i).join('/');
+                    if (allChallenges.has(parentPath)) {
+                        parent = allChallenges.get(parentPath);
+                        break;
+                    }
+                }
+
+                if (parent) {
+                    parent.subChallenges.push(challenge);
+                } else {
+                    roots.push(challenge);
+                }
+            }
+            return roots;
         }
 
         const modal = document.getElementById('challenge-modal');
 
-        function openModal(challenge) {
+        async function openModal(challenge) {
             document.getElementById('modal-challenge-title').textContent = formatName(challenge.name);
             document.getElementById('modal-category').textContent = challenge.path.includes('/') ? challenge.path.split('/')[0].toUpperCase() : 'TRANSMISSION';
-            document.getElementById('modal-description').innerHTML = parseMarkdownLinks(challenge.description, challenge.path);
+
+            const descContainer = document.getElementById('modal-description');
+            descContainer.innerHTML = '<div class="loading-spinner" style="width:20px; height:20px;"></div> Decrypting fragment...';
+
+            // Fetch README content on demand if not already loaded
+            if (!challenge.loaded) {
+                try {
+                    const content = await fetchFileContent(challenge.readmePath);
+                    challenge.description = content ? content.replace(/^#[^\n]*\n*/, '').trim() : 'No description available.';
+                    challenge.loaded = true;
+                } catch (e) {
+                    challenge.description = 'Error fetching transmission details.';
+                }
+            }
+
+            descContainer.innerHTML = parseMarkdownLinks(challenge.description, challenge.path);
 
             const fileGrid = document.getElementById('modal-files');
             const footer = document.getElementById('modal-footer');
@@ -710,29 +869,92 @@
         window.onclick = (e) => { if (e.target === modal) closeModal(); };
         window.onkeydown = (e) => { if (e.key === 'Escape') closeModal(); };
 
-        function openChallengeByPath(path) {
+        async function toggleChallenge(e, path) {
+            e.stopPropagation();
+            const card = e.currentTarget;
+
+            // Allow clicks on file links to pass through
+            if (e.target.closest('.file-link')) return;
+
             const challenge = CHALLENGES_CACHE.get(path);
-            if (challenge) openModal(challenge);
+            if (!challenge) return;
+
+            const isExpanded = card.classList.toggle('expanded');
+
+            if (isExpanded && !challenge.loaded) {
+                const readmeContainer = card.querySelector('.card-readme');
+                readmeContainer.innerHTML = '<div class="loading-spinner" style="width:20px; height:20px;"></div> Decrypting fragment...';
+
+                try {
+                    const content = await fetchFileContent(challenge.readmePath);
+                    challenge.description = content ? content.replace(/^#[^\n]*\n*/, '').trim() : 'No description available.';
+                    challenge.loaded = true;
+                } catch (err) {
+                    challenge.description = 'Transmission intercepted. Signal lost.';
+                }
+
+                readmeContainer.innerHTML = parseMarkdownLinks(challenge.description, challenge.path);
+            }
         }
 
-        function renderTimeline(challenges) {
-            const container = document.getElementById('timeline');
-            container.innerHTML = '';
+        function renderTimeline(challenges, container = null) {
+            const rootContainer = container || document.getElementById('timeline');
+            if (!container) rootContainer.innerHTML = '';
 
-            challenges.forEach((c, idx) => {
+            challenges.forEach(c => {
                 const item = document.createElement('div');
                 item.className = 'timeline-item';
+
+                let subFragmentsHtml = '';
+                if (c.subChallenges && c.subChallenges.length > 0) {
+                    subFragmentsHtml = `
+                        <div class="sub-challenges-list"></div>
+                    `;
+                }
+
                 item.innerHTML = `
                     <div class="timeline-dot"></div>
-                    <div class="challenge-card" onclick="openChallengeByPath('${c.path}')">
-                        <div class="challenge-info">
-                            <h3 class="challenge-title">${formatName(c.name)}</h3>
-                            <span class="challenge-path">/${c.path}</span>
+                    <div class="challenge-card" onclick="toggleChallenge(event, '${c.path}')">
+                        <div class="card-header">
+                            <div class="challenge-info">
+                                <h3 class="challenge-title">${formatName(c.name)}</h3>
+                                <span class="challenge-path">/${c.path}</span>
+                            </div>
+                            <span class="card-icon">➜</span>
                         </div>
-                        <span class="card-icon">➜</span>
+                        <div class="expanded-content">
+                            <div class="card-readme"></div>
+                            <div class="files-grid" style="margin-bottom: 2rem;"></div>
+                            ${subFragmentsHtml}
+                        </div>
                     </div>
                 `;
-                container.appendChild(item);
+
+                rootContainer.appendChild(item);
+
+                // Render files
+                const filesContainer = item.querySelector('.files-grid');
+                if (c.files.length > 0) {
+                    c.files.forEach(file => {
+                        const link = document.createElement('a');
+                        link.href = file.url;
+                        link.className = 'file-link';
+                        link.onclick = (e) => {
+                            e.stopPropagation();
+                            window.open(file.url, '_blank');
+                        };
+                        link.innerHTML = `<span class="file-icon">${getFileIcon(file.name)}</span> ${file.name}`;
+                        filesContainer.appendChild(link);
+                    });
+                } else {
+                    filesContainer.style.display = 'none';
+                }
+
+                // Recurse for sub-challenges
+                if (c.subChallenges && c.subChallenges.length > 0) {
+                    const subList = item.querySelector('.sub-challenges-list');
+                    renderTimeline(c.subChallenges, subList);
+                }
             });
         }
 
