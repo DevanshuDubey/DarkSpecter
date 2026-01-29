@@ -1,4 +1,3 @@
-
 The trail didn’t end where Specter pointed it.
 It only deepened.
 What waited on the  other side was an archive with not a single answer 
